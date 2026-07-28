@@ -65,11 +65,32 @@ export const sources: Source[] = [
     note: "腋窩、螺旋溝與 PIN 病變的肌肉分布。"
   },
   {
+    id: "pmr-carpal",
+    title: "Carpal Tunnel Syndrome",
+    organization: "AAPM&R PM&R KnowledgeNow",
+    url: "https://now.aapmr.org/carpal-tunnel-syndrome/",
+    note: "腕隧道為正中神經最常見的壓迫位置。"
+  },
+  {
     id: "pmr-lsplexus",
     title: "Lumbosacral Plexopathy and Sciatic Neuropathy",
     organization: "AAPM&R PM&R KnowledgeNow",
     url: "https://now.aapmr.org/lumbosacral-plexopathy-and-sciatic-neuropathy-differential-diagnosis-and-treatment/",
     note: "坐骨神經、腓骨分支與腰薦神經叢的分層選肌。"
+  },
+  {
+    id: "pmr-distal-lower",
+    title: "Distal Lower Extremity Mononeuropathies",
+    organization: "AAPM&R PM&R KnowledgeNow",
+    url: "https://now.aapmr.org/distal-lower-extremity-mononeuropathies-2/",
+    note: "腓骨頭、前踝與足部遠端單神經病變的解剖路徑。"
+  },
+  {
+    id: "pmr-tarsal",
+    title: "Tarsal Tunnel Syndrome",
+    organization: "AAPM&R PM&R KnowledgeNow",
+    url: "https://now.aapmr.org/tarsal-tunnel-syndrome-and-intrinsic-neurologic-foot-disorders-2/",
+    note: "脛神經於屈肌支持帶下方進入跗管的解剖與定位。"
   },
   {
     id: "pmr-poly",
