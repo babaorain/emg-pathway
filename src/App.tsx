@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, LockKeyhole } from "lucide-react";
+import {
+  AlertTriangle,
+  ClipboardList,
+  LockKeyhole,
+  PanelRightClose,
+  PanelRightOpen,
+  Search,
+  Workflow
+} from "lucide-react";
 import { CompareDrawer } from "./components/CompareDrawer";
 import { Header } from "./components/Header";
 import { MuscleDetailDrawer } from "./components/MuscleDetailDrawer";
@@ -50,6 +58,17 @@ const defaultProtocolForRegion: Record<Region, string> = {
   general: "motor-neuron-disease"
 };
 
+type WorkspaceTab = "pathway" | "library";
+
+const workspaceTabs: Array<{
+  id: WorkspaceTab;
+  label: string;
+  icon: typeof Workflow;
+}> = [
+  { id: "pathway", label: "神經路徑圖", icon: Workflow },
+  { id: "library", label: "肌肉搜尋", icon: Search }
+];
+
 export default function App() {
   const [region, setRegion] = useState<Region>("upper");
   const [selectedProtocolId, setSelectedProtocolId] = useState(
@@ -69,6 +88,8 @@ export default function App() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("pathway");
+  const [planCollapsed, setPlanCollapsed] = useState(false);
 
   const selectedProtocol =
     protocolById.get(selectedProtocolId) ??
@@ -219,50 +240,106 @@ export default function App() {
           onSelect={selectProtocol}
         />
 
-        <main className="app-main">
+        <main
+          className={`app-main ${planCollapsed ? "plan-collapsed" : ""}`}
+        >
           <div className="workspace-grid">
             <div className="workspace-primary">
-              <PathwayCanvas
-                protocol={selectedProtocol}
-                selectedMuscleId={selectedMuscleId}
-                onSelectMuscle={selectMuscle}
-                onSelectNode={selectGraphNode}
-              />
-              <MuscleLibrary
-                region={region}
-                selectedMuscleId={selectedMuscleId}
-                onSelectMuscle={selectMuscle}
+              <div className="workspace-tabs" role="tablist">
+                {workspaceTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      role="tab"
+                      id={`workspace-tab-${tab.id}`}
+                      aria-selected={workspaceTab === tab.id}
+                      aria-controls={`workspace-pane-${tab.id}`}
+                      className={workspaceTab === tab.id ? "active" : ""}
+                      onClick={() => setWorkspaceTab(tab.id)}
+                    >
+                      <Icon size={15} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+                <button
+                  className="plan-toggle"
+                  onClick={() => setPlanCollapsed((value) => !value)}
+                  aria-pressed={planCollapsed}
+                  title={planCollapsed ? "顯示檢查方案" : "收合檢查方案，路徑圖放大"}
+                >
+                  {planCollapsed ? (
+                    <PanelRightOpen size={15} />
+                  ) : (
+                    <PanelRightClose size={15} />
+                  )}
+                  <span>{planCollapsed ? "顯示方案" : "收合方案"}</span>
+                </button>
+              </div>
+
+              <div
+                className="workspace-pane"
+                role="tabpanel"
+                id={`workspace-pane-${workspaceTab}`}
+                aria-labelledby={`workspace-tab-${workspaceTab}`}
+              >
+                {workspaceTab === "pathway" ? (
+                  <PathwayCanvas
+                    protocol={selectedProtocol}
+                    selectedMuscleId={selectedMuscleId}
+                    onSelectMuscle={selectMuscle}
+                    onSelectNode={selectGraphNode}
+                  />
+                ) : (
+                  <MuscleLibrary
+                    region={region}
+                    selectedMuscleId={selectedMuscleId}
+                    onSelectMuscle={selectMuscle}
+                  />
+                )}
+              </div>
+
+              <NextRecommendationBar
+                recommendation={nextRecommendation}
+                onSelect={selectMuscle}
               />
             </div>
 
-            <ProtocolPanel
-              protocol={selectedProtocol}
-              results={results}
-              customMuscleIds={customMuscleIds}
-              onChangeResult={changeResult}
-              onSelectMuscle={selectMuscle}
-              onRemoveCustom={removeCustomMuscle}
-              onReset={resetProtocol}
-              onCompare={() => setCompareOpen(true)}
-            />
+            {planCollapsed ? (
+              <button
+                className="plan-rail"
+                onClick={() => setPlanCollapsed(false)}
+                title="顯示檢查方案"
+              >
+                <ClipboardList size={16} />
+                <span>檢查方案</span>
+              </button>
+            ) : (
+              <ProtocolPanel
+                protocol={selectedProtocol}
+                results={results}
+                customMuscleIds={customMuscleIds}
+                onChangeResult={changeResult}
+                onSelectMuscle={selectMuscle}
+                onRemoveCustom={removeCustomMuscle}
+                onReset={resetProtocol}
+                onCompare={() => setCompareOpen(true)}
+              />
+            )}
           </div>
-
-          <NextRecommendationBar
-            recommendation={nextRecommendation}
-            onSelect={selectMuscle}
-          />
-
-          <footer className="app-footer">
-            <span>
-              <LockKeyhole size={14} />
-              本機狀態只保存在此瀏覽器；請勿輸入病人識別資料。
-            </span>
-            <button onClick={() => setSourcesOpen(true)}>
-              內容校正與引用來源
-            </button>
-          </footer>
         </main>
       </div>
+
+      <footer className="app-footer">
+        <span>
+          <LockKeyhole size={14} />
+          本機狀態只保存在此瀏覽器；請勿輸入病人識別資料。
+        </span>
+        <button onClick={() => setSourcesOpen(true)}>
+          內容校正與引用來源
+        </button>
+      </footer>
 
       <MuscleDetailDrawer
         muscle={selectedMuscle}

@@ -1,11 +1,4 @@
-import {
-  BookOpen,
-  CircleHelp,
-  CloudOff,
-  PanelLeft,
-  Printer,
-  Wifi
-} from "lucide-react";
+import { BookOpen, CloudOff, PanelLeft, Printer } from "lucide-react";
 import type { Region } from "../types";
 
 interface HeaderProps {
@@ -65,29 +58,30 @@ export function Header({
       </nav>
 
       <div className="header-actions">
-        <span className={`offline-state ${online ? "online" : ""}`}>
-          {online ? <Wifi size={15} /> : <CloudOff size={15} />}
-          <span>{online ? "離線快取就緒" : "離線使用中"}</span>
-        </span>
-        <button className="text-button" onClick={onOpenSources}>
-          <BookOpen size={17} />
-          <span>依據</span>
-        </button>
+        {/* Only surfaced when it actually matters — a permanent "cache ready"
+            badge was constant chrome for a non-event. */}
+        {online ? null : (
+          <span className="offline-state">
+            <CloudOff size={15} />
+            <span>離線使用中</span>
+          </span>
+        )}
         <button
-          className="icon-button desktop-only"
-          aria-label="使用限制"
+          className="text-button"
           onClick={onOpenSources}
+          title="臨床用途、限制與內容依據"
         >
-          <CircleHelp size={18} />
+          <BookOpen size={17} />
+          <span>依據與限制</span>
         </button>
         <button
-          className="primary-button"
+          className="text-button"
           onClick={onPrint}
           aria-label="列印方案"
           title="列印方案"
         >
           <Printer size={17} />
-          <span>列印方案</span>
+          <span>列印</span>
         </button>
       </div>
     </header>

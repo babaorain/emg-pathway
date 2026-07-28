@@ -1,5 +1,6 @@
 import { ExternalLink, ShieldCheck, X } from "lucide-react";
 import { sources } from "../data/sources";
+import { useOverlay } from "../hooks/useOverlay";
 
 interface SourcesModalProps {
   open: boolean;
@@ -7,22 +8,36 @@ interface SourcesModalProps {
 }
 
 export function SourcesModal({ open, onClose }: SourcesModalProps) {
+  const containerRef = useOverlay<HTMLElement>(open, onClose);
+
   return (
     <div
       className={`modal-shell ${open ? "open" : ""}`}
       aria-hidden={!open}
     >
       <div className="modal-scrim" onClick={onClose} aria-hidden="true" />
-      <section className="sources-modal" role="dialog" aria-modal="true">
+      <section
+        ref={containerRef}
+        tabIndex={-1}
+        className="sources-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sources-modal-title"
+      >
         <div className="modal-header">
           <div>
             <ShieldCheck size={22} />
             <div>
-              <h2>臨床用途、限制與內容依據</h2>
+              <h2 id="sources-modal-title">臨床用途、限制與內容依據</h2>
               <p>Physician-facing decision support · 不是自動診斷系統</p>
             </div>
           </div>
-          <button className="icon-button" onClick={onClose} aria-label="關閉">
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="關閉"
+            data-autofocus
+          >
             <X size={20} />
           </button>
         </div>

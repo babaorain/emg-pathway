@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Focus,
   Maximize2,
   Minimize2,
   RotateCcw,
+  Scan,
   ZoomIn,
   ZoomOut
 } from "lucide-react";
@@ -104,7 +105,11 @@ export function PathwayCanvas({
 }: PathwayCanvasProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  // `zoom` is a multiplier on top of fit-to-width: 1 means the whole diagram
+  // is visible, values above 1 magnify and enable horizontal panning.
   const [zoom, setZoom] = useState(1);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [selectedCompressionId, setSelectedCompressionId] = useState<
     string | null
   >(null);
@@ -132,6 +137,47 @@ export function PathwayCanvas({
   useEffect(() => {
     setSelectedCompressionId(null);
   }, [displayRegion]);
+
+  // Track the usable box of the scroll viewport so the diagram can default to
+  // fitting inside it, instead of the hard-coded 1240px that silently clipped
+  // the right-hand "protocol muscles" column.
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      // Floor to avoid a sub-pixel overflow that would spawn a scrollbar at
+      // exactly the fitted size.
+      setViewport({
+        width: Math.floor(entry.contentRect.width),
+        height: Math.floor(entry.contentRect.height)
+      });
+    });
+    observer.observe(element);
+    setViewport({
+      width: Math.floor(element.clientWidth),
+      height: Math.floor(element.clientHeight)
+    });
+    return () => observer.disconnect();
+  }, [expanded]);
+
+  // Reset back to fitted whenever the diagram itself changes.
+  useEffect(() => {
+    setZoom(1);
+  }, [displayRegion, expanded]);
+
+  // Contain, not just fit-width: the whole map has to be visible at zoom 1,
+  // otherwise the wide aspect ratio would clip the lower rows instead.
+  const fitScale =
+    viewport.width > 0 && viewport.height > 0
+      ? Math.min(
+          viewport.width / topology.width,
+          viewport.height / topology.height
+        )
+      : 1;
+  const measured = viewport.width > 0 && viewport.height > 0;
+  const renderedWidth = topology.width * fitScale * zoom;
+  const renderedHeight = topology.height * fitScale * zoom;
+  const atFitWidth = zoom <= 1.001;
 
   const topologyNodeById = useMemo(
     () => new Map(topology.nodes.map((node) => [node.id, node])),
@@ -278,21 +324,30 @@ export function PathwayCanvas({
           </button>
           <button
             className="icon-button canvas-zoom"
-            onClick={() => setZoom((value) => Math.max(0.8, value - 0.1))}
+            onClick={() => setZoom((value) => Math.max(1, value - 0.25))}
             aria-label="縮小路徑圖"
             title="縮小"
-            disabled={zoom <= 0.8}
+            disabled={atFitWidth}
           >
             <ZoomOut size={16} />
           </button>
           <button
             className="icon-button canvas-zoom"
-            onClick={() => setZoom((value) => Math.min(1.3, value + 0.1))}
+            onClick={() => setZoom((value) => Math.min(3, value + 0.25))}
             aria-label="放大神經路徑圖"
             title="放大"
-            disabled={zoom >= 1.3}
+            disabled={zoom >= 3}
           >
             <ZoomIn size={16} />
+          </button>
+          <button
+            className="icon-button canvas-zoom"
+            onClick={() => setZoom(1)}
+            aria-label="縮放回適合寬度"
+            title="適合寬度"
+            disabled={atFitWidth}
+          >
+            <Scan size={16} />
           </button>
           <span className="canvas-focus">
             <Focus size={15} />
@@ -309,10 +364,20 @@ export function PathwayCanvas({
         </div>
       </div>
 
-      <div className="pathway-scroll">
+      <div
+        className={`pathway-scroll ${atFitWidth ? "at-fit-width" : ""}`}
+        ref={scrollRef}
+      >
         <svg
           className="pathway-svg"
-          style={{ width: topology.width * zoom }}
+          // Both axes are set explicitly: an SVG with only a viewBox falls back
+          // to the 300x150 replaced-element default, which made the measured
+          // box and the drawing chase each other.
+          style={
+            measured
+              ? { width: renderedWidth, height: renderedHeight }
+              : undefined
+          }
           viewBox={`0 0 ${topology.width} ${topology.height}`}
           role="img"
           aria-label={`${protocol.labelZh} 的固定解剖層級神經路徑與常見卡壓點`}

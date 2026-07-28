@@ -1,6 +1,7 @@
 import { Check, GitCompareArrows, X } from "lucide-react";
 import { muscleById } from "../data/muscles";
 import { protocolById } from "../data/protocols";
+import { useOverlay } from "../hooks/useOverlay";
 import type { Protocol } from "../types";
 
 interface CompareDrawerProps {
@@ -20,6 +21,7 @@ export function CompareDrawer({
   onClose,
   onSelectMuscle
 }: CompareDrawerProps) {
+  const containerRef = useOverlay<HTMLElement>(open, onClose);
   const comparison = compareId ? protocolById.get(compareId) : null;
   const leftIds = new Set([
     ...protocol.required.map((item) => item.muscleId),
@@ -39,6 +41,10 @@ export function CompareDrawer({
         aria-hidden="true"
       />
       <section
+        ref={containerRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-label="病灶鑑別比較"
         className={`compare-drawer ${open ? "open" : ""}`}
         aria-hidden={!open}
       >
@@ -50,7 +56,12 @@ export function CompareDrawer({
               <p>相同 root／nerve 的控制肌會比單一路徑更有定位價值。</p>
             </div>
           </div>
-          <button className="icon-button" onClick={onClose} aria-label="關閉">
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="關閉"
+            data-autofocus
+          >
             <X size={20} />
           </button>
         </div>

@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from "react";
 import { muscleById } from "../data/muscles";
 import { sourceById } from "../data/sources";
+import { useOverlay } from "../hooks/useOverlay";
 import type { Muscle } from "../types";
 
 interface MuscleDetailDrawerProps {
@@ -39,6 +40,8 @@ export function MuscleDetailDrawer({
   onAddToPlan,
   onSelectAlternative
 }: MuscleDetailDrawerProps) {
+  const containerRef = useOverlay<HTMLElement>(open, onClose);
+
   if (!muscle) return null;
 
   const primaryRoots = muscle.roots
@@ -58,6 +61,9 @@ export function MuscleDetailDrawer({
         aria-hidden="true"
       />
       <aside
+        ref={containerRef}
+        tabIndex={-1}
+        role="dialog"
         className={`muscle-drawer ${open ? "open" : ""}`}
         aria-hidden={!open}
         aria-labelledby="muscle-detail-title"
@@ -72,7 +78,12 @@ export function MuscleDetailDrawer({
             <h2 id="muscle-detail-title">{muscle.nameZh}</h2>
             <p>{muscle.nameEn}</p>
           </div>
-          <button className="icon-button" onClick={onClose} aria-label="關閉">
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="關閉"
+            data-autofocus
+          >
             <X size={20} />
           </button>
         </div>
