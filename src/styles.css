@@ -68,14 +68,20 @@ button:disabled {
   opacity: 0.55;
 }
 
+/* The shell is a vertical frame: header / strip / body / footer. On desktop it
+   is locked to the viewport so only the inner panes scroll; below 960px it
+   falls back to normal page flow. */
 .app-shell {
-  min-height: 100vh;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
 }
 
 .app-header {
   position: sticky;
   z-index: 40;
   top: 0;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(230px, 1fr) auto minmax(230px, 1fr);
   align-items: center;
@@ -184,13 +190,12 @@ button:disabled {
   align-items: center;
   gap: 6px;
   margin-right: 5px;
-  color: var(--teal);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--orange-soft);
+  color: var(--orange);
   font-size: 11px;
   font-weight: 700;
-}
-
-.offline-state:not(.online) {
-  color: var(--orange);
 }
 
 .icon-button,
@@ -206,6 +211,7 @@ button:disabled {
   border-radius: 7px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .icon-button {
@@ -269,16 +275,15 @@ button:disabled {
 
 .app-body {
   display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
   grid-template-columns: 230px minmax(0, 1fr);
-  min-height: calc(100vh - 96px);
 }
 
 .sidebar {
-  position: sticky;
   z-index: 20;
-  top: 96px;
-  align-self: start;
-  height: calc(100vh - 96px);
+  min-height: 0;
+  height: 100%;
   padding: 15px 13px;
   overflow: hidden auto;
   border-right: 1px solid var(--line);
@@ -418,22 +423,112 @@ button:disabled {
 }
 
 .app-main {
+  display: flex;
   min-width: 0;
-  padding: 15px;
+  min-height: 0;
+  flex-direction: column;
+  padding: 13px;
 }
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(355px, 390px);
-  align-items: start;
-  gap: 14px;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: 13px;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
+}
+
+.app-main.plan-collapsed .workspace-grid {
+  grid-template-columns: minmax(0, 1fr) 44px;
 }
 
 .workspace-primary {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+
+/* Tab strip that swaps the pathway diagram and the muscle lookup table, so the
+   primary column shows one complete surface instead of stacking two that each
+   need their own scroll. */
+.workspace-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.workspace-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #5c6880;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workspace-tabs > button:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
+}
+
+.workspace-tabs > button.active {
+  border-color: #91a9df;
+  background: var(--indigo-soft);
+  color: var(--indigo);
+}
+
+.workspace-tabs .plan-toggle {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.workspace-pane {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.workspace-pane > * {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* Collapsed-checklist rail: a vertical tab that brings the plan back. */
+.plan-rail {
+  display: flex;
+  width: 44px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 14px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--indigo);
+  font-size: 12px;
+  font-weight: 800;
+  flex-direction: column;
+}
+
+.plan-rail:hover {
+  border-color: #91a9df;
+  background: var(--indigo-soft);
+}
+
+.plan-rail span {
+  writing-mode: vertical-rl;
+  letter-spacing: 0.08em;
 }
 
 .pathway-panel,
@@ -445,9 +540,22 @@ button:disabled {
 
 .pathway-panel {
   position: relative;
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 10px;
+}
+
+.pathway-panel .panel-heading,
+.pathway-panel .compression-section {
+  flex: 0 0 auto;
+}
+
+.pathway-panel .pathway-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .panel-heading,
@@ -497,6 +605,7 @@ button:disabled {
   font: inherit;
   font-size: 10px;
   font-weight: 850;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -534,9 +643,16 @@ button:disabled {
 
 .pathway-svg {
   display: block;
-  min-width: 992px;
+  width: 100%;
   height: auto;
+  margin: 0 auto;
   transition: width 160ms ease;
+}
+
+/* When fitted, the diagram cannot overflow — drop the scrollbar gutter.
+   Zooming past 1 switches this back to a normal scrolling box. */
+.pathway-scroll.at-fit-width {
+  overflow: hidden;
 }
 
 .column-band {
@@ -920,7 +1036,6 @@ body.pathway-fullscreen-open {
 }
 
 .pathway-expanded .pathway-svg {
-  min-width: 992px;
   margin: 0 auto;
 }
 
@@ -939,9 +1054,8 @@ body.pathway-fullscreen-open {
 }
 
 .protocol-panel {
-  position: sticky;
-  top: 111px;
-  max-height: calc(100vh - 126px);
+  min-height: 0;
+  height: 100%;
   overflow: hidden auto;
   border-radius: 10px;
   box-shadow: 0 9px 25px rgb(35 54 86 / 7%);
@@ -1019,10 +1133,12 @@ body.pathway-fullscreen-open {
 }
 
 .protocol-tiers {
+  min-width: 0;
   padding: 0 8px;
 }
 
 .protocol-tier {
+  min-width: 0;
   margin-bottom: 8px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1031,6 +1147,7 @@ body.pathway-fullscreen-open {
 
 .tier-heading {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 9px;
   min-height: 43px;
@@ -1067,10 +1184,17 @@ body.pathway-fullscreen-open {
 
 .tier-heading > div {
   display: flex;
+  min-width: 0;
   flex: 1;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tier-heading > div > strong,
+.tier-heading > div > span {
+  min-width: 0;
 }
 
 .tier-heading strong {
@@ -1096,50 +1220,72 @@ body.pathway-fullscreen-open {
   flex-direction: column;
 }
 
+/* Compact two-line row: name + result buttons share one line, context sits on
+   a secondary line. Keeps a full essential plan visible without scrolling. */
 .protocol-row {
-  padding: 9px;
+  padding: 6px 9px;
   border-bottom: 1px solid #e6eaf0;
+  border-left: 3px solid transparent;
 }
 
 .protocol-row:last-child {
   border-bottom: 0;
 }
 
-.muscle-row-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(80px, auto) auto auto;
+.protocol-row.is-normal {
+  border-left-color: #77b8b2;
+  background: #fbfefd;
+}
+
+.protocol-row.is-abnormal {
+  border-left-color: #ef9994;
+  background: #fffbfb;
+}
+
+.row-line {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  width: 100%;
+  gap: 8px;
+}
+
+.muscle-row-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 5px;
   padding: 0;
   border: 0;
   background: transparent;
   text-align: left;
 }
 
-.muscle-row-main > span:first-child {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
 .muscle-row-main strong {
-  font-size: 11px;
+  flex: 0 0 auto;
+  font-size: 11.5px;
 }
 
 .muscle-row-main small {
-  margin-top: 2px;
+  min-width: 0;
   overflow: hidden;
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.row-meta {
-  color: #687389;
-  font-size: 8.5px;
-  text-align: right;
+.muscle-row-main .row-chevron,
+.high-risk-icon {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.muscle-row-main .row-chevron {
+  color: #9aa5b8;
+}
+
+.muscle-row-main:hover .row-chevron {
+  color: var(--indigo);
 }
 
 .high-risk-icon {
@@ -1148,59 +1294,75 @@ body.pathway-fullscreen-open {
 
 .row-reason {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 2px;
   color: #6b768a;
   font-size: 9px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .row-reason svg {
   flex: 0 0 auto;
-  margin-top: 1px;
+}
+
+.row-reason > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  flex: 0 0 auto;
+  color: #4c586f;
+  font-size: 8.5px;
+  font-weight: 700;
 }
 
 .result-controls {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 8px;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+/* Screen-hidden; the print stylesheet reveals it. */
+.row-status {
+  display: none;
 }
 
 .result-controls button {
   display: inline-flex;
+  min-width: 46px;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 29px;
-  padding: 5px 8px;
+  gap: 3px;
+  min-height: 28px;
+  padding: 4px 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
   color: #6a7589;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
 }
 
-.tested-toggle {
-  margin-right: auto;
+.result-controls button:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-soft);
 }
 
-.tested-toggle.active {
-  border-color: #8aa4dd;
-  background: var(--indigo-soft);
-  color: var(--indigo);
-}
-
-.result-option.normal.active {
-  border-color: #77b8b2;
+.result-option.normal.active,
+.result-option.normal.active:hover {
+  border-color: #4d9e97;
   background: var(--teal-soft);
   color: #08746d;
 }
 
-.result-option.abnormal.active {
-  border-color: #ef9994;
+.result-option.abnormal.active,
+.result-option.abnormal.active:hover {
+  border-color: #e2736c;
   background: var(--danger-soft);
   color: var(--danger);
 }
@@ -1315,9 +1477,17 @@ body.pathway-fullscreen-open {
 }
 
 .muscle-library {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 10px;
+}
+
+.muscle-library .library-heading,
+.muscle-library .library-toolbar {
+  flex: 0 0 auto;
 }
 
 .library-heading > span {
@@ -1362,7 +1532,8 @@ body.pathway-fullscreen-open {
 }
 
 .muscle-table-wrap {
-  max-height: 370px;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: auto;
 }
 
@@ -1430,6 +1601,25 @@ body.pathway-fullscreen-open {
 
 .muscle-table tbody tr.selected td:first-child {
   box-shadow: inset 3px 0 var(--indigo);
+}
+
+.row-open-button {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #96a1b4;
+}
+
+.muscle-table tbody tr:hover .row-open-button,
+.row-open-button:focus-visible {
+  background: var(--indigo-soft);
+  color: var(--indigo);
 }
 
 .muscle-table td strong,
@@ -1507,18 +1697,17 @@ body.pathway-fullscreen-open {
   text-align: center;
 }
 
+/* Sits inside the primary column, so it can no longer overlap the checklist
+   panel on the right. */
 .next-bar {
-  position: sticky;
-  z-index: 12;
-  bottom: 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 11px;
-  width: min(720px, calc(100% - 30px));
-  min-height: 64px;
-  margin: 14px auto 0;
-  padding: 10px 14px;
+  width: 100%;
+  min-height: 56px;
+  flex: 0 0 auto;
+  padding: 9px 13px;
   border: 0;
   border-radius: 9px;
   background: linear-gradient(96deg, #14357f, #173b8f 72%, #0e2a6c);
@@ -1582,7 +1771,10 @@ body.pathway-fullscreen-open {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 4px 8px;
+  flex: 0 0 auto;
+  padding: 7px 18px;
+  border-top: 1px solid var(--line);
+  background: #fff;
   color: var(--muted);
   font-size: 9px;
 }
@@ -2231,13 +2423,25 @@ body.pathway-fullscreen-open {
   display: none;
 }
 
+/* Desktop: lock the shell to the viewport so the page itself never scrolls —
+   each pane owns its own scrollbar instead. */
+@media (min-width: 961px) {
+  .app-shell {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-header {
+    position: static;
+  }
+}
+
 @media (max-width: 1180px) {
   .workspace-grid {
     grid-template-columns: minmax(0, 1fr) 350px;
   }
 
-  .offline-state span,
-  .text-button span {
+  .offline-state span {
     display: none;
   }
 
@@ -2266,34 +2470,75 @@ body.pathway-fullscreen-open {
     padding-left: 250px;
   }
 
+  /* `align-items: start` is inherited from the desktop grid rule; on a column
+     flex container that makes children size to max-content, which blew the
+     layout ~950px past the viewport. */
   .workspace-grid {
     display: flex;
+    align-items: stretch;
     flex-direction: column;
   }
 
+  .app-body,
+  .app-main,
+  .workspace-grid,
+  .workspace-primary,
+  .workspace-pane {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .workspace-pane > * {
+    flex: 0 0 auto;
+  }
+
   .protocol-panel {
-    position: static;
     order: -1;
     width: 100%;
+    height: auto;
     max-height: none;
+    overflow: visible;
+  }
+
+  .muscle-table-wrap {
+    max-height: 60vh;
+  }
+
+  /* Below 960px the panel height is content-driven, so the canvas needs a
+     definite height — otherwise contain-scaling and the box size would chase
+     each other. */
+  .pathway-scroll {
+    height: 42vh;
+    min-height: 220px;
+  }
+
+  /* Collapsing the checklist is a desktop-only affordance. */
+  .workspace-tabs .plan-toggle {
+    display: none;
+  }
+
+  .plan-rail {
+    width: 100%;
+    justify-content: center;
+    flex-direction: row;
+  }
+
+  .plan-rail span {
+    writing-mode: horizontal-tb;
   }
 
   .protocol-tiers {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
     gap: 7px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .protocol-tier {
+    min-width: 0;
   }
 
   .muscle-row-main {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-
-  .row-meta {
-    display: none;
-  }
-
-  .result-controls {
     flex-wrap: wrap;
   }
 }
@@ -2338,7 +2583,6 @@ body.pathway-fullscreen-open {
   }
 
   .desktop-only,
-  .header-actions .text-button,
   .offline-state span {
     display: none;
   }
@@ -2347,12 +2591,13 @@ body.pathway-fullscreen-open {
     gap: 5px;
   }
 
-  .header-actions .primary-button {
+  /* Collapse the header actions to icons rather than dropping them entirely. */
+  .header-actions .text-button {
     width: 36px;
     padding: 0;
   }
 
-  .header-actions .primary-button span {
+  .header-actions .text-button span {
     display: none;
   }
 
@@ -2465,21 +2710,12 @@ body.pathway-fullscreen-open {
     padding: 0 12px 10px;
   }
 
+  /* Same trap as .workspace-grid: `align-items: start` carried over from the
+     960px rule makes column-flex children size to max-content. */
   .protocol-tiers {
     display: flex;
+    align-items: stretch;
     flex-direction: column;
-  }
-
-  .muscle-row-main {
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-  }
-
-  .row-meta {
-    display: block;
-  }
-
-  .result-controls {
-    flex-wrap: nowrap;
   }
 
   .pathway-panel {
@@ -2496,13 +2732,14 @@ body.pathway-fullscreen-open {
     display: none;
   }
 
-  .canvas-focus,
-  .canvas-zoom {
+  .canvas-focus {
     display: none;
   }
 
+  /* The diagram used to be hidden outright on phones. It now renders
+     fit-to-width as a tappable overview; full-screen is where you read it. */
   .pathway-scroll {
-    display: none;
+    display: block;
   }
 
   .fullscreen-button {
@@ -2730,10 +2967,12 @@ body.pathway-fullscreen-open {
   .clinical-strip,
   .sidebar,
   .sidebar-scrim,
-  .pathway-panel,
   .muscle-library,
+  .workspace-tabs,
+  .canvas-actions,
   .next-bar,
   .app-footer,
+  .plan-rail,
   .muscle-drawer,
   .drawer-scrim,
   .compare-drawer,
@@ -2742,21 +2981,91 @@ body.pathway-fullscreen-open {
     display: none !important;
   }
 
-  .app-body,
-  .workspace-grid {
+  .app-shell {
     display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-body,
+  .workspace-grid,
+  .workspace-primary,
+  .workspace-pane {
+    display: block;
+    height: auto;
+    overflow: visible;
   }
 
   .app-main {
+    display: block;
     padding: 0;
   }
 
+  /* The diagram is the differentiator — it belongs on the printout. It only
+     prints when the pathway tab is the one on screen. */
+  .pathway-panel {
+    display: block;
+    height: auto;
+    overflow: visible;
+    border: 0;
+    break-after: page;
+  }
+
+  .pathway-scroll {
+    overflow: visible !important;
+    border: 0;
+  }
+
+  .pathway-svg {
+    width: 100% !important;
+    height: auto;
+  }
+
+  .compression-section {
+    break-inside: avoid;
+  }
+
   .protocol-panel {
-    position: static;
     max-height: none;
+    height: auto;
     overflow: visible;
     border: 0;
     box-shadow: none;
+  }
+
+  /* Swap the interactive result buttons for the recorded value as text. */
+  .result-controls {
+    display: none;
+  }
+
+  .row-status {
+    display: inline-block;
+    min-width: 46px;
+    padding: 2px 7px;
+    border: 1px solid #98a3b6;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .row-status.normal {
+    border-color: #0a746d;
+    color: #0a746d;
+  }
+
+  .row-status.abnormal {
+    border-color: #b3261e;
+    color: #b3261e;
+  }
+
+  .row-status.untested {
+    color: #6a7589;
+  }
+
+  .protocol-row {
+    border-left: 0;
+    background: none !important;
   }
 
   .protocol-panel::before {
@@ -2781,8 +3090,7 @@ body.pathway-fullscreen-open {
     break-inside: avoid;
   }
 
-  .protocol-header-actions,
-  .result-controls {
+  .protocol-header-actions {
     display: none;
   }
 }

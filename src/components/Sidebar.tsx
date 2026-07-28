@@ -1,5 +1,6 @@
 import { ChevronRight, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useOverlay } from "../hooks/useOverlay";
 import type { Protocol, ProtocolType, Region } from "../types";
 
 interface SidebarProps {
@@ -27,6 +28,9 @@ export function Sidebar({
   onClose,
   onSelect
 }: SidebarProps) {
+  // Only engages while the mobile drawer is open; on desktop `open` stays false
+  // and the sidebar behaves as ordinary in-page content.
+  const containerRef = useOverlay<HTMLElement>(open, onClose);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<ProtocolType | "all">(
     region === "general" ? "general" : "all"
@@ -51,10 +55,19 @@ export function Sidebar({
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className={`sidebar ${open ? "open" : ""}`}>
+      <aside
+        ref={containerRef}
+        tabIndex={-1}
+        className={`sidebar ${open ? "open" : ""}`}
+      >
         <div className="sidebar-mobile-title">
           <strong>選擇臨床目標</strong>
-          <button className="icon-button" onClick={onClose} aria-label="關閉">
+          <button
+            className="icon-button"
+            onClick={onClose}
+            aria-label="關閉"
+            data-autofocus
+          >
             <X size={19} />
           </button>
         </div>
@@ -87,12 +100,15 @@ export function Sidebar({
             ))}
         </div>
 
-        <div className="protocol-list" role="listbox" aria-label="病灶清單">
+        {/* A navigation list, not a form control — `listbox`/`option` would
+            promise arrow-key semantics this doesn't implement. */}
+        <nav className="protocol-list" aria-label="病灶清單">
           {visible.map((protocol) => (
             <button
               key={protocol.id}
-              role="option"
-              aria-selected={selectedProtocolId === protocol.id}
+              aria-current={
+                selectedProtocolId === protocol.id ? "true" : undefined
+              }
               className={
                 selectedProtocolId === protocol.id ? "selected" : undefined
               }
@@ -111,7 +127,7 @@ export function Sidebar({
           {visible.length === 0 ? (
             <p className="empty-copy">沒有符合條件的病灶。</p>
           ) : null}
-        </div>
+        </nav>
 
         <div className="sidebar-note">
           <strong>選肌邏輯</strong>

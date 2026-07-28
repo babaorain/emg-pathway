@@ -189,7 +189,18 @@ export function MuscleLibrary({
                   </span>
                 </td>
                 <td>
-                  <ChevronRight size={16} />
+                  {/* Real button so the row is reachable by keyboard without
+                      breaking the table's row/cell semantics. */}
+                  <button
+                    className="row-open-button"
+                    aria-label={`查看 ${muscle.nameZh} ${muscle.nameEn} 詳細資訊`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelectMuscle(muscle.id);
+                    }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
                 </td>
               </tr>
             ))}

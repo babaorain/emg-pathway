@@ -1,9 +1,7 @@
 import {
   AlertTriangle,
   Check,
-  CheckCircle2,
   ChevronRight,
-  Circle,
   GitCompareArrows,
   Info,
   RotateCcw,
@@ -138,83 +136,86 @@ export function ProtocolPanel({
                       tested: false,
                       result: "untested"
                     };
+                    const primaryRoots = muscle.roots
+                      .filter((item) => item.emphasis === "primary")
+                      .map((item) => item.root)
+                      .join("–");
                     return (
-                      <div className="protocol-row" key={muscle.id}>
-                        <button
-                          className="muscle-row-main"
-                          onClick={() => onSelectMuscle(muscle.id)}
-                        >
-                          <span>
+                      <div
+                        className={`protocol-row ${
+                          current.tested ? `is-${current.result}` : ""
+                        }`}
+                        key={muscle.id}
+                      >
+                        <div className="row-line">
+                          <button
+                            className="muscle-row-main"
+                            onClick={() => onSelectMuscle(muscle.id)}
+                          >
                             <strong>{muscle.nameZh}</strong>
                             <small>{muscle.nameEn}</small>
-                          </span>
-                          <span className="row-meta">
-                            {muscle.roots
-                              .filter((item) => item.emphasis === "primary")
-                              .map((item) => item.root)
-                              .join("–")}{" "}
-                            · {muscle.nerveEn}
-                          </span>
-                          {muscle.risk === "high" ? (
-                            <AlertTriangle
-                              className="high-risk-icon"
-                              size={16}
-                              aria-label="高風險進針"
-                            />
-                          ) : null}
-                          <ChevronRight size={16} />
-                        </button>
+                            {muscle.risk === "high" ? (
+                              <AlertTriangle
+                                className="high-risk-icon"
+                                size={14}
+                                aria-label="高風險進針"
+                              />
+                            ) : null}
+                            <ChevronRight className="row-chevron" size={14} />
+                          </button>
 
-                        <div className="row-reason">
-                          <Info size={14} />
-                          <span>{entry.reason}</span>
+                          {/* One tap records the result — marking a result
+                              implies the muscle was tested. Tapping the active
+                              option again clears it back to untested. */}
+                          <div className="result-controls">
+                            {resultOptions.map((option) => {
+                              const active =
+                                current.tested && current.result === option.id;
+                              return (
+                                <button
+                                  key={option.id}
+                                  className={`result-option ${option.id} ${
+                                    active ? "active" : ""
+                                  }`}
+                                  onClick={() =>
+                                    onChangeResult(
+                                      muscle.id,
+                                      active
+                                        ? { tested: false, result: "untested" }
+                                        : { tested: true, result: option.id }
+                                    )
+                                  }
+                                  aria-pressed={active}
+                                  aria-label={`${muscle.nameZh} ${option.label}`}
+                                >
+                                  {active ? <Check size={12} /> : null}
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Print-only: buttons don't render on paper, so the
+                              recorded result is emitted as text instead. */}
+                          <span
+                            className={`row-status ${
+                              current.tested ? current.result : "untested"
+                            }`}
+                          >
+                            {current.tested
+                              ? current.result === "abnormal"
+                                ? "異常"
+                                : "正常"
+                              : "未檢查"}
+                          </span>
                         </div>
 
-                        <div className="result-controls">
-                          <button
-                            className={`tested-toggle ${
-                              current.tested ? "active" : ""
-                            }`}
-                            onClick={() =>
-                              onChangeResult(muscle.id, {
-                                tested: !current.tested,
-                                result: current.tested
-                                  ? "untested"
-                                  : current.result === "untested"
-                                    ? "normal"
-                                    : current.result
-                              })
-                            }
-                            aria-pressed={current.tested}
-                          >
-                            {current.tested ? (
-                              <CheckCircle2 size={16} />
-                            ) : (
-                              <Circle size={16} />
-                            )}
-                            已檢查
-                          </button>
-                          {resultOptions.map((option) => (
-                            <button
-                              key={option.id}
-                              disabled={!current.tested}
-                              className={`result-option ${option.id} ${
-                                current.result === option.id ? "active" : ""
-                              }`}
-                              onClick={() =>
-                                onChangeResult(muscle.id, {
-                                  tested: true,
-                                  result: option.id
-                                })
-                              }
-                              aria-pressed={current.result === option.id}
-                            >
-                              {current.result === option.id ? (
-                                <Check size={14} />
-                              ) : null}
-                              {option.label}
-                            </button>
-                          ))}
+                        <div className="row-reason">
+                          <span className="row-meta">
+                            {primaryRoots} · {muscle.nerveEn}
+                          </span>
+                          <Info size={12} />
+                          <span>{entry.reason}</span>
                         </div>
                       </div>
                     );
